@@ -1,0 +1,6 @@
+node_modules/
+captures/
+.profile/
+.session.json
+.state/
+downloads/

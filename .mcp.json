@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "icorsi": {
+      "command": "node",
+      "args": ["src/mcp.js"]
+    }
+  }
+}
