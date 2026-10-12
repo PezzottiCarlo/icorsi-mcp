@@ -4,10 +4,11 @@ import { BASE } from '../config.js';
 import { IcorsiError } from '../errors.js';
 import { compact, decode } from '../util/text.js';
 import { htmlToText, htmlLinks } from '../util/html.js';
-import { cmidFromUrl, fileKey, isFileUrl } from '../util/url.js';
+import { cmidFromUrl, discussionIdFromUrl, fileKey, isFileUrl } from '../util/url.js';
 import { completionOf, datesOf } from './common.js';
 import { rawContents } from './courses.js';
 import { HANDLERS, generic } from './modules/index.js';
+import { getDiscussion } from './modules/forum.js';
 
 const toRef = (ref) => {
   if (typeof ref === 'number' || /^\d+$/.test(String(ref))) return { cmid: Number(ref) };
@@ -34,6 +35,8 @@ export async function resolveModule(ctx, { cmid, url } = {}) {
 export async function getActivity(ctx, ref) {
   ref = toRef(ref);
   if (ref.url && isFileUrl(ref.url)) throw new IcorsiError('That is a file: download it with icorsi_download');
+  const discussionId = ref.url ? discussionIdFromUrl(ref.url) : null;
+  if (discussionId) return getDiscussion(ctx, discussionId);
   const { cm, mod, section } = await resolveModule(ctx, ref);
   const described = htmlLinks(mod?.description);
   const base = compact({

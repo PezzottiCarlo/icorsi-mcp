@@ -1,6 +1,9 @@
 // Activity type -> handler(ctx, cm, mod) returning the type-specific part of icorsi_get_activity.
 
 import * as content from './content.js';
+import { forum } from './forum.js';
+import { assign } from './assign.js';
+import { quiz } from './quiz.js';
 
 export const HANDLERS = {
   page: content.page,
@@ -10,6 +13,9 @@ export const HANDLERS = {
   folder: content.folder,
   imscp: content.imscp,
   url: content.url,
+  forum,
+  assign,
+  quiz,
 };
 
 /** Types whose content iCorsi does not expose to the web service (hvp, wooclap, ...) */
