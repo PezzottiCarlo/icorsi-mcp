@@ -8,7 +8,8 @@
     "record": "node scripts/record.js",
     "cli": "node src/cli.js",
     "mcp": "node src/mcp.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "smoke": "node scripts/smoke.js"
   },
   "engines": {
     "node": ">=18"
