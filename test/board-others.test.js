@@ -11,28 +11,28 @@ test('board reads configuration, columns, notes and their comments through AJAX'
   const ctx = fakeCtx({ web: {
     mod_board_get_configuration: { settings: JSON.stringify({ board: { id: '828', name: 'Tabella', intro: '<p>Completa la tabella</p>' } }) },
     mod_board_get_board: [{ id: 3580, name: 'Aspetti', locked: false, notes: [
-      { id: 12941, userid: 80590, heading: 'Aspetti - S. L.', content: '<p>Adulti temono questa età</p>', url: null, timecreated: 1791395156, commentcount: 1 },
-      { id: 12943, userid: 80591, heading: null, content: '<p>Competenza digitale</p>', url: 'https://example.org/v', timecreated: 1791795443, commentcount: 0 },
+      { id: 12941, userid: 990001, heading: 'Aspetti - A. B.', content: '<p>Adulti temono questa età</p>', url: null, timecreated: 1791395156, commentcount: 1 },
+      { id: 12943, userid: 990002, heading: null, content: '<p>Competenza digitale</p>', url: 'https://example.org/v', timecreated: 1791795443, commentcount: 0 },
     ] }],
     mod_board_get_comments: { comments: [{ id: 1, content: 'Bello!', timecreated: 1791795443 }] },
   } });
   const out = await board(ctx, { id: 50, course: 9, instance: 828, modname: 'board' });
   assert.equal(out.intro, 'Completa la tabella');
   assert.deepEqual(out.columns, [{ id: 3580, name: 'Aspetti', notes: [
-    { id: 12941, heading: 'Aspetti - S. L.', text: 'Adulti temono questa età', date: '2026-10-07T17:45:56.000Z', comments: [{ text: 'Bello!', date: '2026-10-12T08:57:23.000Z' }] },
+    { id: 12941, heading: 'Aspetti - A. B.', text: 'Adulti temono questa età', date: '2026-10-07T17:45:56.000Z', comments: [{ text: 'Bello!', date: '2026-10-12T08:57:23.000Z' }] },
     { id: 12943, text: 'Competenza digitale', url: 'https://example.org/v', date: '2026-10-12T08:57:23.000Z' },
   ] }]);
   assert.deepEqual(ctx.calls.filter((c) => c.fn === 'mod_board_get_comments').map((c) => c.args), [{ noteid: 12941 }]);
   assert.ok(ctx.calls.every((c) => c.kind === 'web'));
-  assert.equal(JSON.stringify(out).includes('80590'), false); // note authors are never exposed
+  assert.equal(JSON.stringify(out).includes('990001'), false); // note authors are never exposed
 });
 
 test('glossary lists its entries', async () => {
   const ctx = fakeCtx({ ws: {
     mod_glossary_get_glossaries_by_courses: { glossaries: [{ id: 500, coursemodule: 50, intro: '<p>Inserisci la parola</p>', introfiles: [] }] },
-    mod_glossary_get_entries_by_letter: { count: 1, entries: [{ concept: 'Ambito di competenze', userfullname: 'B. C.', timecreated: 1791395156, definition: '<p>Insieme di</p>', attachments: [] }] },
+    mod_glossary_get_entries_by_letter: { count: 1, entries: [{ concept: 'Ambito di competenze', userfullname: 'C. D.', timecreated: 1791395156, definition: '<p>Insieme di</p>', attachments: [] }] },
   } });
-  assert.deepEqual(await glossary(ctx, cm('glossary')), { intro: 'Inserisci la parola', count: 1, entries: [{ concept: 'Ambito di competenze', author: 'B. C.', date: '2026-10-07T17:45:56.000Z', text: 'Insieme di' }] });
+  assert.deepEqual(await glossary(ctx, cm('glossary')), { intro: 'Inserisci la parola', count: 1, entries: [{ concept: 'Ambito di competenze', author: 'C. D.', date: '2026-10-07T17:45:56.000Z', text: 'Insieme di' }] });
   assert.deepEqual(ctx.calls.find((c) => c.fn === 'mod_glossary_get_entries_by_letter').args, { id: 500, letter: 'ALL', from: 0, limit: 500 });
 });
 

@@ -3,18 +3,18 @@ import assert from 'node:assert/strict';
 import { PadletClient, isPadletUrl, wallHashid, mapWish } from '../src/transport/padlet.js';
 import { jsonResponse } from './helpers.js';
 
-const PAGE = '<html><head><title>Qualcosa di te (2026)</title>'
-  + '<link rel="preload" as="fetch" id="wishes-preload" href="/api/10/wishes?wall_hashid=board_rlV8Am6qVPKRy5NX&amp;page_start=&amp;v=1"></head></html>';
+const PAGE = '<html><head><title>Presentiamoci (2026)</title>'
+  + '<link rel="preload" as="fetch" id="wishes-preload" href="/api/10/wishes?wall_hashid=board_TestWall42&amp;page_start=&amp;v=1"></head></html>';
 const wish = (id, extra = {}) => ({ id: String(id), type: 'wish', attributes: {
   id, headline: `Post ${id}`, subject: `Post ${id}`, body: '<p>Ciao <b>a tutti</b></p>', attachment: '', attachment_link: null,
   created_at: '2026-09-29T13:09:17.057Z', permalink: `https://padlet.com/x/y/wish/${id}`, ...extra,
 } });
 
 test('isPadletUrl and wallHashid', () => {
-  assert.equal(isPadletUrl('https://padlet.com/rossanafalcade/qualcosa-di-te'), true);
+  assert.equal(isPadletUrl('https://padlet.com/teacher/qualcosa-di-te'), true);
   assert.equal(isPadletUrl('https://www.icorsi.ch/'), false);
   assert.equal(isPadletUrl('not a url'), false);
-  assert.equal(wallHashid(PAGE), 'board_rlV8Am6qVPKRy5NX');
+  assert.equal(wallHashid(PAGE), 'board_TestWall42');
   assert.equal(wallHashid('<html></html>'), null);
 });
 
@@ -31,15 +31,15 @@ test('getWall reads the page, then every page of posts', async () => {
     const u = new URL(url);
     seen.push(u.pathname);
     if (u.pathname === '/api/10/wishes') {
-      assert.equal(u.searchParams.get('wall_hashid'), 'board_rlV8Am6qVPKRy5NX');
+      assert.equal(u.searchParams.get('wall_hashid'), 'board_TestWall42');
       return u.searchParams.get('page_start')
         ? jsonResponse({ data: [wish(3)], meta: { next: null } })
         : jsonResponse({ data: [wish(1), wish(2)], meta: { next: 'abc' } });
     }
     return new Response(PAGE, { headers: { 'content-type': 'text/html' } });
   };
-  const wall = await new PadletClient({ fetchImpl, userAgent: 'UA' }).getWall('https://padlet.com/rossanafalcade/qualcosa');
-  assert.equal(wall.title, 'Qualcosa di te (2026)');
+  const wall = await new PadletClient({ fetchImpl, userAgent: 'UA' }).getWall('https://padlet.com/teacher/qualcosa');
+  assert.equal(wall.title, 'Presentiamoci (2026)');
   assert.deepEqual(wall.posts.map((p) => p.id), [1, 2, 3]);
   assert.equal(seen.length, 3);
 });

@@ -8,19 +8,19 @@ import { HANDLERS } from '../src/services/modules/index.js';
 import { fakeCtx } from './helpers.js';
 
 const post = (id, extra = {}) => ({
-  id, subject: `Re: Tema ${id}`, message: '<p>Testo <a href="https://example.org/p">fonte</a></p>', author: { id: 3, fullname: 'Paolo Arru' },
+  id, subject: `Re: Tema ${id}`, message: '<p>Testo <a href="https://example.org/p">fonte</a></p>', author: { id: 3, fullname: 'Mario Rossi' },
   discussionid: 155947, parentid: null, timecreated: 1791395156, timemodified: 1791395156, isprivatereply: false, attachments: [], ...extra,
 });
 
 test('mapPost and mapDiscussion', () => {
   assert.deepEqual(mapPost(post(1, { parentid: 7, timemodified: 1791795443, attachments: [{ filename: 'a.pdf', fileurl: 'https://www.icorsi.ch/webservice/pluginfile.php/1/mod_forum/attachment/1/a.pdf', filesize: 10, mimetype: 'application/pdf' }] })), {
-    id: 1, subject: 'Re: Tema 1', author: 'Paolo Arru', date: '2026-10-07T17:45:56.000Z', edited: '2026-10-12T08:57:23.000Z', parent: 7, text: 'Testo fonte',
+    id: 1, subject: 'Re: Tema 1', author: 'Mario Rossi', date: '2026-10-07T17:45:56.000Z', edited: '2026-10-12T08:57:23.000Z', parent: 7, text: 'Testo fonte',
     files: [{ name: 'a.pdf', url: 'https://www.icorsi.ch/pluginfile.php/1/mod_forum/attachment/1/a.pdf', size: 10, mimetype: 'application/pdf' }],
     links: [{ name: 'fonte', url: 'https://example.org/p' }],
     url: 'https://www.icorsi.ch/mod/forum/discuss.php?d=155947#p1',
   });
-  assert.deepEqual(mapDiscussion({ discussion: 155947, name: 'Lezione &amp; attività', userfullname: 'Paolo Arru', created: 1791395156, timemodified: 1791395156, numreplies: 0, numunread: 0, pinned: false, locked: false }), {
-    id: 155947, title: 'Lezione & attività', author: 'Paolo Arru', created: '2026-10-07T17:45:56.000Z', modified: '2026-10-07T17:45:56.000Z', replies: 0, url: 'https://www.icorsi.ch/mod/forum/discuss.php?d=155947',
+  assert.deepEqual(mapDiscussion({ discussion: 155947, name: 'Lezione &amp; attività', userfullname: 'Mario Rossi', created: 1791395156, timemodified: 1791395156, numreplies: 0, numunread: 0, pinned: false, locked: false }), {
+    id: 155947, title: 'Lezione & attività', author: 'Mario Rossi', created: '2026-10-07T17:45:56.000Z', modified: '2026-10-07T17:45:56.000Z', replies: 0, url: 'https://www.icorsi.ch/mod/forum/discuss.php?d=155947',
   });
 });
 
@@ -62,7 +62,7 @@ test('assign returns dates, my submission, feedback and comments', async () => {
       ] }, gradingstatus: 'graded', locked: false, extensionduedate: null },
       feedback: { gradefordisplay: '<span>85,00 / 100,00</span>', gradeddate: 1791795443, plugins: [{ type: 'comments', editorfields: [{ text: '<p>Ottimo lavoro</p>' }] }, { type: 'file', fileareas: [{ files: [] }] }] },
     },
-    core_comment_get_comments: { comments: [{ fullname: 'Paolo Arru', timecreated: 1791795443, content: '<p>Visto</p>' }] },
+    core_comment_get_comments: { comments: [{ fullname: 'Mario Rossi', timecreated: 1791795443, content: '<p>Visto</p>' }] },
   } });
   assert.deepEqual(await assign(ctx, { id: 50, course: 9, instance: 69142, modname: 'assign' }), {
     intro: 'Carica il PDF',
@@ -73,7 +73,7 @@ test('assign returns dates, my submission, feedback and comments', async () => {
     submission: {
       status: 'submitted', grading: 'graded', modified: '2026-10-12T08:57:23.000Z', text: 'Il mio testo',
       files: [{ name: 'mio.pdf', url: 'https://www.icorsi.ch/pluginfile.php/1/assignsubmission_file/submission_files/1/mio.pdf' }],
-      comments: [{ author: 'Paolo Arru', date: '2026-10-12T08:57:23.000Z', text: 'Visto' }],
+      comments: [{ author: 'Mario Rossi', date: '2026-10-12T08:57:23.000Z', text: 'Visto' }],
     },
     feedback: { grade: '85,00 / 100,00', graded: '2026-10-12T08:57:23.000Z', comments: 'Ottimo lavoro' },
   });

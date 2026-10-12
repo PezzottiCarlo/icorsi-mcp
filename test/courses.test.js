@@ -70,12 +70,12 @@ test('getCourses asks for every enrolled course', async () => {
 
 test('getCourse merges details and contents', async () => {
   const ctx = fakeCtx({ ws: {
-    core_course_get_courses_by_field: { courses: [{ id: 5, fullname: 'Psicologia 1', shortname: 'PSI', categoryname: 'Scienze', summary: '<p>Il corso</p>', contacts: [{ id: 1, fullname: 'Paolo Arru' }], startdate: 1791395156, enddate: 0, format: 'flexsections' }] },
+    core_course_get_courses_by_field: { courses: [{ id: 5, fullname: 'Psicologia 1', shortname: 'PSI', categoryname: 'Scienze', summary: '<p>Il corso</p>', contacts: [{ id: 1, fullname: 'Mario Rossi' }], startdate: 1791395156, enddate: 0, format: 'flexsections' }] },
     core_course_get_contents: SECTIONS,
   } });
   const c = await getCourse(ctx, '5');
   assert.equal(c.id, 5);
-  assert.deepEqual(c.teachers, ['Paolo Arru']);
+  assert.deepEqual(c.teachers, ['Mario Rossi']);
   assert.equal(c.summary, 'Il corso');
   assert.equal(c.sections.length, 2);
   assert.equal(c.url, 'https://www.icorsi.ch/course/view.php?id=5');

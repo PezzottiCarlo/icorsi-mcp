@@ -18,10 +18,10 @@ const SECTIONS = [{ id: 1, name: 'Lezione 1', summary: '', modules: [
   { id: 53, name: 'Obiettivi', modname: 'page', url: 'https://www.icorsi.ch/mod/page/view.php?id=53', uservisible: true },
 ] }];
 
-const WELCOME = { id: 70, subject: 'Benvenuti', message: '<p>Ciao a tutti</p>', author: { fullname: 'Paolo Arru' }, discussionid: 7, timecreated: 1791395156, timemodified: 1791395156, attachments: [] };
+const WELCOME = { id: 70, subject: 'Benvenuti', message: '<p>Ciao a tutti</p>', author: { fullname: 'Mario Rossi' }, discussionid: 7, timecreated: 1791395156, timemodified: 1791395156, attachments: [] };
 
 const scanCtx = ({
-  discussions = [{ discussion: 7, name: 'Benvenuti', userfullname: 'Paolo Arru', created: 1791395156, timemodified: 1791395156 }],
+  discussions = [{ discussion: 7, name: 'Benvenuti', userfullname: 'Mario Rossi', created: 1791395156, timemodified: 1791395156 }],
   posts = { 7: [WELCOME] },
   updates = { instances: [] },
   assignments = { courses: [] },

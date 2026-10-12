@@ -68,28 +68,28 @@ test('getConversations lists conversations, contacts and requests', async () => 
   const ctx = fakeCtx({ ws: {
     core_message_get_conversations: { conversations: [
       { id: 125405, name: '', type: 3, membercount: 1, unreadcount: null, isfavourite: true, ismuted: false, members: [{ id: 7, fullname: 'Test Student' }], messages: [] },
-      { id: 200, name: '', type: 1, membercount: 2, unreadcount: 2, isfavourite: false, ismuted: false, members: [{ id: 3, fullname: 'Paolo Arru' }], messages: [{ id: 9, useridfrom: 3, text: '<p>Ciao</p>', timecreated: 1791795443 }] },
+      { id: 200, name: '', type: 1, membercount: 2, unreadcount: 2, isfavourite: false, ismuted: false, members: [{ id: 3, fullname: 'Mario Rossi' }], messages: [{ id: 9, useridfrom: 3, text: '<p>Ciao</p>', timecreated: 1791795443 }] },
     ] },
-    core_message_get_user_contacts: [{ id: 3, fullname: 'Paolo Arru' }],
+    core_message_get_user_contacts: [{ id: 3, fullname: 'Mario Rossi' }],
     core_message_get_contact_requests: [],
   } });
   assert.deepEqual(await getConversations(ctx), {
     conversations: [
       { id: 125405, type: 'self', name: 'Personal space', members: 1, favourite: true },
-      { id: 200, type: 'private', name: 'Paolo Arru', members: 2, unread: 2, last: { id: 9, from: 'Paolo Arru', text: 'Ciao', date: '2026-10-12T08:57:23.000Z' } },
+      { id: 200, type: 'private', name: 'Mario Rossi', members: 2, unread: 2, last: { id: 9, from: 'Mario Rossi', text: 'Ciao', date: '2026-10-12T08:57:23.000Z' } },
     ],
-    contacts: ['Paolo Arru'],
+    contacts: ['Mario Rossi'],
   });
 });
 
 test('getConversation returns messages oldest first', async () => {
-  const ctx = fakeCtx({ ws: { core_message_get_conversation_messages: { id: 200, members: [{ id: 3, fullname: 'Paolo Arru' }, { id: 7, fullname: 'Test Student' }], messages: [
+  const ctx = fakeCtx({ ws: { core_message_get_conversation_messages: { id: 200, members: [{ id: 3, fullname: 'Mario Rossi' }, { id: 7, fullname: 'Test Student' }], messages: [
     { id: 2, useridfrom: 7, text: '<p>Grazie</p>', timecreated: 1791795443 },
     { id: 1, useridfrom: 3, text: '<p>Ciao</p>', timecreated: 1791395156 },
   ] } } });
   const c = await getConversation(ctx, 200);
-  assert.deepEqual(c.messages.map((m) => [m.id, m.from, m.text]), [[1, 'Paolo Arru', 'Ciao'], [2, 'Test Student', 'Grazie']]);
-  assert.deepEqual(c.members, ['Paolo Arru', 'Test Student']);
+  assert.deepEqual(c.messages.map((m) => [m.id, m.from, m.text]), [[1, 'Mario Rossi', 'Ciao'], [2, 'Test Student', 'Grazie']]);
+  assert.deepEqual(c.members, ['Mario Rossi', 'Test Student']);
   assert.deepEqual(ctx.calls[0].args, { currentuserid: 7, convid: 200, limitfrom: 0, limitnum: 100, newest: true });
 });
 
@@ -119,14 +119,14 @@ test('getCourseGrades lists every grade item', async () => {
 test('getParticipants lists people with roles and groups, filterable by role', async () => {
   const ctx = fakeCtx({ ws: {
     core_enrol_get_enrolled_users: [
-      { id: 3, fullname: 'Paolo Arru', email: 'paolo@example.org', roles: [{ shortname: 'editingteacher' }], groups: [] },
+      { id: 3, fullname: 'Mario Rossi', email: 'mario@example.org', roles: [{ shortname: 'editingteacher' }], groups: [] },
       { id: 7, fullname: 'Test Student', roles: [{ shortname: 'student' }], groups: [{ name: 'Group A' }] },
     ],
     core_group_get_course_user_groups: { groups: [{ id: 1, name: 'Group A', courseid: 9 }] },
   } });
   assert.deepEqual(await getParticipants(ctx, 9, { role: 'editingteacher' }), {
     course: 9, total: 2, myGroups: ['Group A'],
-    participants: [{ id: 3, fullname: 'Paolo Arru', email: 'paolo@example.org', roles: ['editingteacher'] }],
+    participants: [{ id: 3, fullname: 'Mario Rossi', email: 'mario@example.org', roles: ['editingteacher'] }],
   });
   assert.deepEqual(ctx.calls.find((c) => c.fn === 'core_enrol_get_enrolled_users').args, { courseid: 9, options: [{ name: 'userfields', value: 'id,fullname,email,roles,groups' }] });
 });
