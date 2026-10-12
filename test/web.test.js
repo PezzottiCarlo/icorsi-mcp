@@ -78,6 +78,27 @@ test('batch boots the sesskey from the dashboard and settles each call', async (
   assert.deepEqual(await web.batch([]), []);
 });
 
+test('batch resends the calls the AJAX service skipped after an error', async () => {
+  const sent = [];
+  const fetchImpl = fakeFetch((u, init) => {
+    if (u.pathname === '/my/') return new Response(MY);
+    const calls = JSON.parse(init.body);
+    sent.push(calls.map((c) => c.args.noteid));
+    // like lib/ajax/service.php: stop at the first failing request
+    const out = [];
+    for (const c of calls) {
+      if (c.args.noteid === 2) { out.push({ error: true, exception: { message: 'nope', errorcode: 'x' } }); break; }
+      out.push({ error: false, data: c.args.noteid });
+    }
+    return jsonResponse(out);
+  });
+  const web = new WebTransport(fakeStore(), { fetchImpl });
+  const out = await web.batch([1, 2, 3, 4].map((noteid) => ({ fn: 'mod_board_get_comments', args: { noteid } })));
+  assert.deepEqual(out.map((r) => (r.error ? 'error' : r.data)), [1, 'error', 3, 4]);
+  assert.deepEqual(sent, [[1, 2, 3, 4], [3, 4]]);
+  assert.deepEqual(JSON.parse(fetchImpl.seen.at(-1).init.body).map((c) => c.index), [0, 1]);
+});
+
 test('call throws the error of its single function', async () => {
   const fetchImpl = fakeFetch((u) => (u.pathname === '/my/' ? new Response(MY) : jsonResponse([{ error: true, exception: { message: 'nope', errorcode: 'x' } }])));
   await assert.rejects(new WebTransport(fakeStore(), { fetchImpl }).call('mod_board_get_comments', { noteid: 2 }), /nope/);

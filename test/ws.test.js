@@ -72,26 +72,39 @@ test('call and batch refuse write functions before sending anything', async () =
   assert.equal(fetchImpl.seen.length, 0);
 });
 
-test('batch splits into chunks, keeps order and settles errors per item', async () => {
-  const fetchImpl = wsFetch((f) => {
-    assert.equal(f.get('wsfunction'), 'tool_mobile_call_external_functions');
-    const responses = [];
-    for (let i = 0; f.has(`requests[${i}][function]`); i++) {
-      const args = JSON.parse(f.get(`requests[${i}][arguments]`));
-      responses.push(args.courseid === 13
-        ? { error: true, exception: JSON.stringify({ message: 'Course not found', errorcode: 'invalidrecord' }) }
-        : { error: false, data: JSON.stringify({ course: args.courseid }) });
+// Like Moodle: tool_mobile_call_external_functions stops at the first failing request
+const stopAtFirstError = (failing) => wsFetch((f) => {
+  assert.equal(f.get('wsfunction'), 'tool_mobile_call_external_functions');
+  const responses = [];
+  for (let i = 0; f.has(`requests[${i}][function]`); i++) {
+    const args = JSON.parse(f.get(`requests[${i}][arguments]`));
+    if (failing.has(args.courseid)) {
+      responses.push({ error: true, exception: JSON.stringify({ message: 'Course not found', errorcode: 'invalidrecord' }) });
+      break;
     }
-    return jsonResponse({ responses });
-  });
+    responses.push({ error: false, data: JSON.stringify({ course: args.courseid }) });
+  }
+  return jsonResponse({ responses });
+});
+
+test('batch splits into chunks, keeps order and settles errors per item', async () => {
+  const fetchImpl = stopAtFirstError(new Set([13]));
   const ws = new WsTransport(fakeStore(), fakeWeb(), { fetchImpl, chunk: 25, concurrency: 2 });
   const out = await ws.batch(Array.from({ length: 30 }, (_, i) => ({ fn: 'core_course_get_contents', args: { courseid: i } })));
-  assert.equal(fetchImpl.seen.length, 2);
   assert.equal(out.length, 30);
-  assert.deepEqual(out[29], { data: { course: 29 } });
+  assert.deepEqual(out[12], { data: { course: 12 } });
   assert.equal(out[13].error.code, 'invalidrecord');
   assert.deepEqual(out[14], { data: { course: 14 } });
+  assert.deepEqual(out[24], { data: { course: 24 } });
+  assert.deepEqual(out[29], { data: { course: 29 } });
+  assert.equal(fetchImpl.seen.length, 3); // the calls after the failing one are sent again
   assert.deepEqual(await ws.batch([]), []);
+});
+
+test('batch resends after every failing item, also consecutive ones', async () => {
+  const ws = new WsTransport(fakeStore(), fakeWeb(), { fetchImpl: stopAtFirstError(new Set([0, 1, 4])) });
+  const out = await ws.batch(Array.from({ length: 6 }, (_, i) => ({ fn: 'core_course_get_contents', args: { courseid: i } })));
+  assert.deepEqual(out.map((r) => (r.error ? 'error' : r.data.course)), ['error', 'error', 2, 3, 'error', 5]);
 });
 
 test('file() goes through /webservice/pluginfile.php with the token', async () => {

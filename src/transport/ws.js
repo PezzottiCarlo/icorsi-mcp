@@ -87,20 +87,33 @@ export class WsTransport {
     for (const c of calls) assertReadOnly(c.fn);
     const chunks = [];
     for (let i = 0; i < calls.length; i += this.#chunk) chunks.push(calls.slice(i, i + this.#chunk));
-    const answers = await pool(chunks, this.#concurrency, (chunk) => this.#withToken(async (token) => {
+    const answers = await pool(chunks, this.#concurrency, (chunk) => this.#withToken((token) => this.#runChunk(chunk, token)));
+    return answers.flat();
+  }
+
+  // Moodle stops a batch at the first failing request: the calls after it did not run, so they are sent again
+  async #runChunk(chunk, token) {
+    const results = [];
+    while (results.length < chunk.length) {
+      const pending = chunk.slice(results.length);
       const out = await this.#post(BATCH_FN, {
-        requests: chunk.map((c) => ({ function: c.fn, arguments: JSON.stringify(c.args ?? {}) })),
+        requests: pending.map((c) => ({ function: c.fn, arguments: JSON.stringify(c.args ?? {}) })),
       }, token);
-      return out.responses.map((r, i) => {
-        if (!r.error) return { data: r.data == null ? null : JSON.parse(r.data) };
+      const responses = (out.responses ?? []).slice(0, pending.length);
+      if (!responses.length) throw new IcorsiError(`iCorsi ${BATCH_FN}: empty answer`);
+      responses.forEach((r, i) => {
+        if (!r.error) {
+          results.push({ data: r.data == null ? null : JSON.parse(r.data) });
+          return;
+        }
         let ex;
         try { ex = JSON.parse(r.exception); } catch { ex = { message: String(r.exception) }; }
-        const error = errorOf(ex, chunk[i].fn);
+        const error = errorOf(ex, pending[i].fn);
         if (error instanceof TokenInvalid) throw error; // the whole chunk is retried with a new token
-        return { error };
+        results.push({ error });
       });
-    }));
-    return answers.flat();
+    }
+    return results;
   }
 
   /** A pluginfile URL through the web service (token in the query); the body is left unread */

@@ -99,30 +99,38 @@ export class WebTransport {
     for (const c of calls) assertReadOnly(c.fn);
     if (!calls.length) return [];
     return this.withSession(async () => {
-      const sesskey = await this.#getSesskey();
-      const info = calls.length === 1 ? calls[0].fn : `${calls.length}-method-calls`;
-      const res = await this.fetch(`/lib/ajax/service.php?sesskey=${sesskey}&info=${info}`, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          accept: 'application/json, text/javascript, */*; q=0.01',
-          'x-requested-with': 'XMLHttpRequest',
-          origin: BASE,
-          referer: `${BASE}/my/`,
-        },
-        body: JSON.stringify(calls.map((c, index) => ({ index, methodname: c.fn, args: c.args ?? {} }))),
-      });
-      const out = await res.json();
-      if (!Array.isArray(out)) {
-        if (EXPIRED.has(out.errorcode)) { this.#sesskey = null; throw new SessionExpired('iCorsi session expired'); }
-        throw new IcorsiError(`iCorsi ajax error: ${out.error ?? out.message ?? JSON.stringify(out)}`, { code: out.errorcode });
-      }
-      return out.map((r, i) => {
-        if (!r.error) return { data: r.data };
-        const ex = r.exception ?? {};
-        if (EXPIRED.has(ex.errorcode)) { this.#sesskey = null; throw new SessionExpired('iCorsi session expired'); }
-        return { error: new IcorsiError(`iCorsi ${calls[i].fn}: ${ex.message ?? ex.errorcode ?? 'unknown error'}`, { code: ex.errorcode }) };
-      });
+      // the service stops at the first failing function: the ones after it are sent again
+      const results = [];
+      while (results.length < calls.length) results.push(...await this.#send(calls.slice(results.length)));
+      return results;
+    });
+  }
+
+  async #send(calls) {
+    const sesskey = await this.#getSesskey();
+    const info = calls.length === 1 ? calls[0].fn : `${calls.length}-method-calls`;
+    const res = await this.fetch(`/lib/ajax/service.php?sesskey=${sesskey}&info=${info}`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        accept: 'application/json, text/javascript, */*; q=0.01',
+        'x-requested-with': 'XMLHttpRequest',
+        origin: BASE,
+        referer: `${BASE}/my/`,
+      },
+      body: JSON.stringify(calls.map((c, index) => ({ index, methodname: c.fn, args: c.args ?? {} }))),
+    });
+    const out = await res.json();
+    if (!Array.isArray(out)) {
+      if (EXPIRED.has(out.errorcode)) { this.#sesskey = null; throw new SessionExpired('iCorsi session expired'); }
+      throw new IcorsiError(`iCorsi ajax error: ${out.error ?? out.message ?? JSON.stringify(out)}`, { code: out.errorcode });
+    }
+    if (!out.length) throw new IcorsiError('iCorsi ajax error: empty answer');
+    return out.slice(0, calls.length).map((r, i) => {
+      if (!r.error) return { data: r.data };
+      const ex = r.exception ?? {};
+      if (EXPIRED.has(ex.errorcode)) { this.#sesskey = null; throw new SessionExpired('iCorsi session expired'); }
+      return { error: new IcorsiError(`iCorsi ${calls[i].fn}: ${ex.message ?? ex.errorcode ?? 'unknown error'}`, { code: ex.errorcode }) };
     });
   }
 
