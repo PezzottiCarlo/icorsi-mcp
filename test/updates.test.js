@@ -46,6 +46,16 @@ test('contentItems lists activities, files, links and page text', () => {
   assert.equal(items['file:https://www.icorsi.ch/pluginfile.php/1/mod_resource/content/1/slide.pdf'].path, 'Lezione 1 > Slide');
 });
 
+test('contentItems does not list a page own index.html as a file', () => {
+  const page = { id: 60, name: 'Obiettivi', modname: 'page', url: 'https://www.icorsi.ch/mod/page/view.php?id=60', uservisible: true, contents: [
+    { type: 'file', filename: 'index.html', filepath: '/', fileurl: 'https://www.icorsi.ch/webservice/pluginfile.php/5/mod_page/content/index.html' },
+    { type: 'file', filename: 'foto.png', filepath: '/', fileurl: 'https://www.icorsi.ch/webservice/pluginfile.php/5/mod_page/content/3/foto.png' },
+  ] };
+  const html = '<p>Vedi <a href="https://www.icorsi.ch/webservice/pluginfile.php/5/mod_page/content/3/scheda.pdf">la scheda</a></p>';
+  const items = contentItems([{ id: 1, name: 'S', modules: [page] }], new Map([[60, { content: html }]]));
+  assert.deepEqual(Object.keys(items).filter((k) => k.startsWith('file:')), ['file:https://www.icorsi.ch/pluginfile.php/5/mod_page/content/3/scheda.pdf']);
+});
+
 test('mergeScan records a baseline, then reports only new items', () => {
   const index = { courses: {} };
   const course = { id: 9, fullname: 'Pedagogia', url: 'u' };
@@ -105,6 +115,24 @@ test('findNewContent keeps a v1 index compatible', async () => {
   assert.deepEqual(r.newItems, []);
   assert.equal(ctx.calls.filter((c) => c.fn === 'mod_forum_get_discussion_posts').length, 1);
   assert.equal(loadIndex(file).courses[9].discussions[7], 1791395156);
+});
+
+test('findNewContent recognises v1 folder file keys (itemid 0) as already seen', async () => {
+  const file = tmpIndex();
+  const folder = { id: 54, name: 'Lezione 1 materiali', modname: 'folder', url: 'https://www.icorsi.ch/mod/folder/view.php?id=54', uservisible: true,
+    contents: [{ type: 'file', filename: 'L1.pdf', filepath: '/', fileurl: 'https://www.icorsi.ch/webservice/pluginfile.php/7/mod_folder/content/5/L1.pdf?forcedownload=1', timemodified: 1791795443 }] };
+  fs.writeFileSync(file, JSON.stringify({ courses: { 9: { name: 'Pedagogia', scannedAt: 1, items: {
+    'activity:54': { kind: 'activity' },
+    'file:https://www.icorsi.ch/pluginfile.php/7/mod_folder/content/0/L1.pdf': { kind: 'file' },
+  } } } }));
+  const ctx = fakeCtx({ ws: {
+    core_course_get_enrolled_courses_by_timeline_classification: { courses: [{ id: 9, fullname: 'Pedagogia' }] },
+    core_course_get_contents: [{ id: 1, name: 'Lezione 1', summary: '', modules: [folder] }],
+    mod_forum_get_forums_by_courses: [],
+    mod_page_get_pages_by_courses: { pages: [] },
+  } });
+  const [r] = await findNewContent(ctx, { indexFile: file });
+  assert.deepEqual(r.newItems, []);
 });
 
 test('findNewContent since a date needs no index', async () => {

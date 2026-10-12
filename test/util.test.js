@@ -37,6 +37,15 @@ test('file URLs are normalised to the browser form', () => {
   assert.equal(fileNameFromUrl('https://www.icorsi.ch/pluginfile.php/1/a/b/Il%20salmone.pdf'), 'Il salmone.pdf');
 });
 
+test('folder files keep one key whatever the folder revision in the URL', () => {
+  // v1 indexed the folder page links (itemid 0); the web service puts the folder revision there
+  assert.equal(
+    fileKey('https://www.icorsi.ch/webservice/pluginfile.php/2160300/mod_folder/content/5/Lezione%201.pdf?forcedownload=1'),
+    'https://www.icorsi.ch/pluginfile.php/2160300/mod_folder/content/0/Lezione%201.pdf',
+  );
+  assert.equal(fileKey('https://www.icorsi.ch/pluginfile.php/9/mod_resource/content/3/a.pdf'), 'https://www.icorsi.ch/pluginfile.php/9/mod_resource/content/3/a.pdf');
+});
+
 test('activity and discussion ids come out of iCorsi URLs only', () => {
   assert.equal(cmidFromUrl('https://www.icorsi.ch/mod/forum/view.php?id=1389466'), 1389466);
   assert.equal(cmidFromUrl('https://www.icorsi.ch/course/view.php?id=5'), null);

@@ -29,7 +29,8 @@ export function contentItems(sections, pagesByCmid = new Map()) {
       add(`activity:${m.id}`, { kind: 'activity', type: m.modname, name, url: m.url, path: section, text: htmlToText(html, { max: TEXT }) });
       if (m.uservisible === false) continue;
       const inline = htmlLinks(html);
-      const files = m.modname === 'book' ? inline.files : [...mapFiles(m.contents), ...inline.files];
+      // book and page contents are their own HTML and images: only the files they link count
+      const files = ['book', 'page'].includes(m.modname) ? inline.files : [...mapFiles(m.contents), ...inline.files];
       for (const f of files) add(`file:${fileKey(f.url)}`, { kind: 'file', name: f.name, url: f.url, path: where, date: f.modified });
       const target = m.modname === 'url' ? m.contents?.find((c) => c.type === 'url')?.fileurl : undefined;
       if (target) add(`link:${m.id}:${target}`, { kind: 'link', name, url: target, path: section });

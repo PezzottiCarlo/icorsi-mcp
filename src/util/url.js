@@ -14,8 +14,12 @@ export function publicFileUrl(url) {
   return u.href;
 }
 
-/** The same file is linked with and without /webservice and ?forcedownload=1 */
-export const fileKey = (url) => publicFileUrl(url).split('?')[0];
+/**
+ * The same file is linked with and without /webservice and ?forcedownload=1. Folder files carry
+ * the folder revision in the web service URLs but itemid 0 on the folder page; Moodle ignores
+ * that segment, so the key uses 0 and a folder edit does not make all its files look new.
+ */
+export const fileKey = (url) => publicFileUrl(url).split('?')[0].replace(/\/mod_folder\/content\/\d+\//, '/mod_folder/content/0/');
 
 /** File name from a pluginfile URL (the Content-Disposition header has broken accents) */
 export function fileNameFromUrl(url) {
