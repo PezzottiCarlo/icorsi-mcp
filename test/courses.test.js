@@ -30,6 +30,12 @@ test('common mappers', () => {
   assert.deepEqual(introOf(null), {});
 });
 
+test('mapFiles reads forum attachments, which carry url instead of fileurl', () => {
+  assert.deepEqual(mapFiles([{ filename: 'a.pdf', filepath: '/', url: 'https://www.icorsi.ch/webservice/pluginfile.php/1/mod_forum/attachment/9/a.pdf', filesize: 5, timemodified: 1791795443 }]), [
+    { name: 'a.pdf', url: 'https://www.icorsi.ch/pluginfile.php/1/mod_forum/attachment/9/a.pdf', size: 5, modified: '2026-10-12T08:57:23.000Z' },
+  ]);
+});
+
 test('instanceOf finds the module among the by-courses results and caches per course', async () => {
   const ctx = fakeCtx({ ws: { mod_page_get_pages_by_courses: { pages: [{ id: 1, coursemodule: 50 }, { id: 2, coursemodule: 51 }] } } });
   assert.equal((await instanceOf(ctx, 'mod_page_get_pages_by_courses', 'pages', { id: 51, course: 9 })).id, 2);

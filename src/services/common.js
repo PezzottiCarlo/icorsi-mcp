@@ -6,13 +6,16 @@ import { publicFileUrl } from '../util/url.js';
 
 const COMPLETION = { 0: 'incomplete', 1: 'complete', 2: 'pass', 3: 'fail' };
 
-/** Moodle file lists (contents, introfiles, attachments) -> [{ name, url, ... }]; url/content entries are skipped */
+/**
+ * Moodle file lists (contents, introfiles, attachments) -> [{ name, url, ... }]; url/content entries are skipped.
+ * Most functions name the link fileurl, forum post attachments name it url.
+ */
 export const mapFiles = (list) => (list ?? [])
-  .filter((f) => !f.type || f.type === 'file')
+  .filter((f) => (!f.type || f.type === 'file') && (f.fileurl || f.url))
   .map((f) => compact({
     name: f.filename,
     folder: f.filepath && f.filepath !== '/' ? f.filepath : undefined,
-    url: publicFileUrl(f.fileurl),
+    url: publicFileUrl(f.fileurl ?? f.url),
     size: f.filesize || undefined,
     mimetype: f.mimetype,
     modified: toIso(f.timemodified),
