@@ -19,6 +19,9 @@ const DENY = new Set([
   'mod_quiz_get_attempt_data',
   'mod_quiz_get_attempt_summary',
   'mod_lesson_get_page_data',
+  'mod_wiki_get_page_for_editing', // takes the page edit lock
+  'tool_mobile_get_content', // runs plugin callbacks with unknown side effects
+  'core_h5p_get_trusted_h5p_file', // may deploy the H5P package on the server
 ]);
 
 export const isReadOnly = (fn) => typeof fn === 'string' && /^[a-z][a-z0-9_]*$/.test(fn) && READ.test(fn) && !DENY.has(fn);

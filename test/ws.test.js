@@ -55,6 +55,35 @@ test('an invalid token is replaced once and the call retried', async () => {
   assert.equal(web.launches, 1);
 });
 
+test('an expired token (accessexception) is replaced once and the call retried', async () => {
+  const store = fakeStore({ token: T1 });
+  const web = fakeWeb();
+  const fetchImpl = wsFetch((f) => (f.get('wstoken') === T1 ? jsonResponse({ exception: 'webservice_access_exception', errorcode: 'accessexception', message: 'Access control exception' }) : jsonResponse({ ok: true })));
+  const ws = new WsTransport(store, web, { fetchImpl });
+  assert.deepEqual(await ws.call('core_webservice_get_site_info'), { ok: true });
+  assert.equal(store.token, T2);
+  assert.equal(web.launches, 1);
+});
+
+test('a lasting access exception is reported after one retry, with its message', async () => {
+  const web = fakeWeb();
+  const ws = new WsTransport(fakeStore({ token: T1 }), web, { fetchImpl: wsFetch(() => jsonResponse({ exception: 'webservice_access_exception', errorcode: 'accessexception', message: 'Access control exception' })) });
+  await assert.rejects(ws.call('core_webservice_get_site_info'), (e) => e.code === 'accessexception' && /Access control exception/.test(e.message));
+  assert.equal(web.launches, 1);
+});
+
+test('an access exception of one batch item does not fail the batch', async () => {
+  const fetchImpl = wsFetch(() => jsonResponse({ responses: [
+    { error: true, exception: JSON.stringify({ message: 'Access control exception', errorcode: 'accessexception' }) },
+    { error: false, data: '1' },
+  ] }));
+  const web = fakeWeb();
+  const out = await new WsTransport(fakeStore({ token: T1 }), web, { fetchImpl }).batch([{ fn: 'core_course_get_contents', args: {} }, { fn: 'core_course_get_contents', args: {} }]);
+  assert.equal(out[0].error.code, 'accessexception');
+  assert.deepEqual(out[1], { data: 1 });
+  assert.equal(web.launches, 0);
+});
+
 test('concurrent calls share one token launch', async () => {
   const store = fakeStore({ token: null });
   const web = fakeWeb();

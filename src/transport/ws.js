@@ -24,9 +24,13 @@ export function flattenParams(value, prefix = '', out = new URLSearchParams()) {
 
 const isException = (json) => json != null && typeof json === 'object' && !Array.isArray(json) && 'errorcode' in json && ('exception' in json || 'error' in json);
 
-function errorOf(json, fn) {
+// topLevel: the answer to the whole request. An expired token is deleted by Moodle and answered
+// with a generic accessexception there, so that one is worth one retry with a fresh token too.
+function errorOf(json, fn, { topLevel = false } = {}) {
+  const message = `iCorsi ${fn}: ${json?.message ?? json?.error ?? json?.errorcode ?? 'unknown error'}`;
   if (json?.errorcode === 'invalidtoken') return new TokenInvalid('iCorsi rejected the web service token', { code: 'invalidtoken' });
-  return new IcorsiError(`iCorsi ${fn}: ${json?.message ?? json?.error ?? json?.errorcode ?? 'unknown error'}`, { code: json?.errorcode });
+  if (topLevel && json?.errorcode === 'accessexception') return new TokenInvalid(message, { code: 'accessexception' });
+  return new IcorsiError(message, { code: json?.errorcode });
 }
 
 export class WsTransport {
@@ -72,7 +76,7 @@ export class WsTransport {
     const res = await this.#fetch(new URL(WS_PATH, BASE), { method: 'POST', body, headers: { 'user-agent': this.#store.userAgent } });
     if (!res.ok) throw new IcorsiError(`iCorsi HTTP ${res.status} on ${fn}`, { code: res.status });
     const json = await res.json();
-    if (isException(json)) throw errorOf(json, fn);
+    if (isException(json)) throw errorOf(json, fn, { topLevel: true });
     return json;
   }
 
@@ -134,7 +138,7 @@ export class WsTransport {
       const text = await res.text();
       let json = null;
       try { json = JSON.parse(text); } catch { /* not JSON after all */ }
-      if (isException(json)) throw errorOf(json, shown);
+      if (isException(json)) throw errorOf(json, shown, { topLevel: true });
       return new Response(text, { status: res.status, headers: res.headers });
     });
   }

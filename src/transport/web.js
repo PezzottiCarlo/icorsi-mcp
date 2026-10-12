@@ -61,6 +61,11 @@ export class WebTransport {
     return res;
   }
 
+  /** Forgets the sesskey (after a new login it belongs to the old session) */
+  reset() {
+    this.#sesskey = null;
+  }
+
   /** Runs fn with a live session: logs in when there is none, and once more if it expires mid-way */
   async withSession(fn) {
     if (!this.#store.hasCookies()) await this.#store.login();

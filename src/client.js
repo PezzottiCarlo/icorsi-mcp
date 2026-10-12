@@ -17,6 +17,17 @@ import { findNewContent } from './services/updates.js';
 import { searchIndex } from './services/search.js';
 import { download } from './services/files.js';
 
+// Fields that work as credentials (site info carries userprivateaccesskey, for instance)
+const SECRETS = new Set(['userprivateaccesskey', 'token', 'privatetoken', 'wstoken', 'sesskey']);
+
+function withoutSecrets(value) {
+  if (Array.isArray(value)) return value.map(withoutSecrets);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).filter(([k]) => !SECRETS.has(k)).map(([k, v]) => [k, withoutSecrets(v)]));
+  }
+  return value;
+}
+
 export class ICorsi {
   #ctx;
 
@@ -25,9 +36,11 @@ export class ICorsi {
     this.#ctx = createContext({ store: store ?? new SessionStore({ interactive }), fetchImpl });
   }
 
-  /** Forces a new browser login (the web service token is kept: iCorsi hands out the same one) */
+  /** Forces a new browser login and a new web service token */
   async login() {
     await this.#ctx.store.login();
+    this.#ctx.store.setToken(null);
+    this.#ctx.web.reset();
     this.#ctx.cache.clear();
     return this.getUser();
   }
@@ -77,9 +90,9 @@ export class ICorsi {
 
   download(url, opts) { return download(this.#ctx, url, opts); }
 
-  /** Any read-only function: transport 'ws' (mobile web service, default) or 'ajax' (website) */
-  call(fn, args = {}, { transport = 'ws' } = {}) {
-    return transport === 'ajax' ? this.#ctx.web.call(fn, args) : this.#ctx.ws.call(fn, args);
+  /** Any read-only function: transport 'ws' (mobile web service, default) or 'ajax' (website). Credentials are stripped. */
+  async call(fn, args = {}, { transport = 'ws' } = {}) {
+    return withoutSecrets(await (transport === 'ajax' ? this.#ctx.web.call(fn, args) : this.#ctx.ws.call(fn, args)));
   }
 
   /** v1: a website AJAX function */

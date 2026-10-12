@@ -55,11 +55,13 @@ export function contentItems(sections, pagesByCmid = new Map()) {
  */
 async function scan(ctx, courses, { known = {}, since } = {}) {
   const ids = courses.map((c) => c.id);
-  const [contents, [forums, pages]] = await Promise.all([
+  const [contents, [forums, pages, assigns]] = await Promise.all([
     ctx.ws.batch(ids.map((courseid) => ({ fn: 'core_course_get_contents', args: { courseid } }))),
     ctx.ws.batch([
       { fn: 'mod_forum_get_forums_by_courses', args: { courseids: ids } },
       { fn: 'mod_page_get_pages_by_courses', args: { courseids: ids } },
+      // assignment instructions (and their attachments) are not in the course contents
+      { fn: 'mod_assign_get_assignments', args: { courseids: ids } },
     ]),
   ]);
   const forumList = forums.data ?? [];
@@ -76,6 +78,12 @@ async function scan(ctx, courses, { known = {}, since } = {}) {
     const sections = contents[ci].data ?? [];
     const items = contentItems(sections, pagesByCmid);
     const paths = new Map(sections.flatMap((s) => (s.modules ?? []).map((m) => [m.id, `${decode(s.name)} > ${decode(m.name)}`])));
+    for (const a of (assigns.data?.courses ?? []).find((c) => c.id === course.id)?.assignments ?? []) {
+      const where = paths.get(a.cmid) ?? decode(a.name);
+      const inline = htmlLinks(a.intro);
+      for (const f of [...mapFiles(a.introattachments), ...inline.files]) items[`file:${fileKey(f.url)}`] ??= compact({ kind: 'file', name: f.name, url: f.url, path: where, date: f.modified });
+      for (const l of inline.links) items[`link:${a.cmid}:${l.url}`] ??= compact({ kind: 'link', name: l.name, url: l.url, path: where });
+    }
     const stamps = {};
     const errors = [];
     forumList.forEach((f, i) => {

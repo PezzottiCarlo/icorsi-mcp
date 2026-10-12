@@ -24,6 +24,7 @@ const scanCtx = ({
   discussions = [{ discussion: 7, name: 'Benvenuti', userfullname: 'Paolo Arru', created: 1791395156, timemodified: 1791395156 }],
   posts = { 7: [WELCOME] },
   updates = { instances: [] },
+  assignments = { courses: [] },
 } = {}) => fakeCtx({ ws: {
   core_course_get_enrolled_courses_by_timeline_classification: { courses: [{ id: 9, fullname: 'Pedagogia', viewurl: 'https://www.icorsi.ch/course/view.php?id=9' }] },
   core_course_get_contents: SECTIONS,
@@ -32,6 +33,7 @@ const scanCtx = ({
   mod_forum_get_forum_discussions: { discussions },
   mod_forum_get_discussion_posts: ({ discussionid }) => ({ posts: posts[discussionid] ?? [] }),
   core_course_get_updates_since: updates,
+  mod_assign_get_assignments: assignments,
 } });
 
 test('contentItems lists activities, files, links and page text', () => {
@@ -54,6 +56,16 @@ test('contentItems does not list a page own index.html as a file', () => {
   const html = '<p>Vedi <a href="https://www.icorsi.ch/webservice/pluginfile.php/5/mod_page/content/3/scheda.pdf">la scheda</a></p>';
   const items = contentItems([{ id: 1, name: 'S', modules: [page] }], new Map([[60, { content: html }]]));
   assert.deepEqual(Object.keys(items).filter((k) => k.startsWith('file:')), ['file:https://www.icorsi.ch/pluginfile.php/5/mod_page/content/3/scheda.pdf']);
+});
+
+test('the scan indexes the files and links of assignment instructions', async () => {
+  const file = tmpIndex();
+  const assignments = { courses: [{ id: 9, assignments: [{ cmid: 50, name: 'Consegna', intro: '<p>Leggi <a href="https://example.org/guida">la guida</a></p>', introfiles: [],
+    introattachments: [{ filename: 'traccia.pdf', fileurl: 'https://www.icorsi.ch/webservice/pluginfile.php/3/mod_assign/introattachment/0/traccia.pdf' }] }] }] };
+  await findNewContent(scanCtx({ assignments }), { indexFile: file });
+  const items = loadIndex(file).courses[9].items;
+  assert.equal(items['file:https://www.icorsi.ch/pluginfile.php/3/mod_assign/introattachment/0/traccia.pdf'].path, 'Lezione 1 > Slide');
+  assert.equal(items['link:50:https://example.org/guida'].kind, 'link');
 });
 
 test('mergeScan records a baseline, then reports only new items', () => {
@@ -130,6 +142,7 @@ test('findNewContent recognises v1 folder file keys (itemid 0) as already seen',
     core_course_get_contents: [{ id: 1, name: 'Lezione 1', summary: '', modules: [folder] }],
     mod_forum_get_forums_by_courses: [],
     mod_page_get_pages_by_courses: { pages: [] },
+    mod_assign_get_assignments: { courses: [] },
   } });
   const [r] = await findNewContent(ctx, { indexFile: file });
   assert.deepEqual(r.newItems, []);

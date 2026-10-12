@@ -99,6 +99,16 @@ test('batch resends the calls the AJAX service skipped after an error', async ()
   assert.deepEqual(JSON.parse(fetchImpl.seen.at(-1).init.body).map((c) => c.index), [0, 1]);
 });
 
+test('reset forgets the sesskey so the next call boots it again', async () => {
+  const fetchImpl = fakeFetch((u) => (u.pathname === '/my/' ? new Response(MY) : jsonResponse([{ error: false, data: 1 }])));
+  const web = new WebTransport(fakeStore(), { fetchImpl });
+  await web.call('core_message_get_member_info', {});
+  await web.call('core_message_get_member_info', {});
+  web.reset();
+  await web.call('core_message_get_member_info', {});
+  assert.equal(fetchImpl.seen.filter((s) => s.url.pathname === '/my/').length, 2);
+});
+
 test('call throws the error of its single function', async () => {
   const fetchImpl = fakeFetch((u) => (u.pathname === '/my/' ? new Response(MY) : jsonResponse([{ error: true, exception: { message: 'nope', errorcode: 'x' } }])));
   await assert.rejects(new WebTransport(fakeStore(), { fetchImpl }).call('mod_board_get_comments', { noteid: 2 }), /nope/);
