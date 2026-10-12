@@ -1,12 +1,14 @@
 {
   "name": "icorsi-mcp",
-  "version": "0.1.0",
-  "description": "Unofficial iCorsi API - traffic recorder",
+  "version": "0.2.0",
+  "description": "Unofficial read-only iCorsi (Moodle) API and MCP server",
   "type": "module",
+  "main": "src/client.js",
   "scripts": {
-    "record": "node src/record.js",
+    "record": "node scripts/record.js",
     "cli": "node src/cli.js",
-    "mcp": "node src/mcp.js"
+    "mcp": "node src/mcp.js",
+    "test": "node --test test/*.test.js"
   },
   "engines": {
     "node": ">=18"
